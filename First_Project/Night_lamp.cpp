@@ -8,15 +8,6 @@ const int ldrPin = A0;     // the photoresistor
 const int ldrCutoff = 300; // the Cutoff Point for the photoresistor. Indicates if it's Night or Day
 bool isOn = false;         // A way to know if the LEDs are already on or not.
 
-void setup() {
-  Serial.begin(9600);                     //Set initial value for photoresistor
-  timeTeller.attach(servoPin, 500, 2500); // binds the servo to its digital pin, 
-  pinMode(ldrPin, INPUT);
-  pinMode(servoPin, OUTPUT);
-  pinMode(led1Pin, OUTPUT);
-  pinMode(led2Pin, OUTPUT);
-}
-
 void moveMotor(char time) {
   // In the display, Night ('n') is on the right side, Day ('d') is on the left
   if (time == 'd') {
@@ -35,6 +26,15 @@ void moveMotor(char time) {
 void changeLEDs(bool state) {
   digitalWrite(led1Pin, state);
   digitalWrite(led2Pin, state);
+}
+
+void setup() {
+  Serial.begin(9600);                     //Set initial value for photoresistor
+  timeTeller.attach(servoPin, 500, 2500); // binds the servo to its digital pin, 
+  pinMode(ldrPin, INPUT);
+  pinMode(servoPin, OUTPUT);
+  pinMode(led1Pin, OUTPUT);
+  pinMode(led2Pin, OUTPUT);
 }
 
 void loop() {
