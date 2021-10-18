@@ -5,7 +5,7 @@ Servo timeTeller;          // initializes the motor
 const int led1Pin = 3;     // an LED pin
 const int led2Pin = 4;     // another LED pin
 const int ldrPin = A0;     // the photoresistor
-const int ldrCutoff = 200; // the Cutoff Point for the photoresistor. Indicates if it's Night or Day
+const int ldrCutoff = 200; // the Cutoff Point for the photoresistor. To tell if it's Night or Day
 bool isOn = false;         // A way to know if the LEDs are already on or not.
 
 void moveMotor(char time) {
