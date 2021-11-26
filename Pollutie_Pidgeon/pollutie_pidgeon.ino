@@ -176,6 +176,7 @@ void checkCollision() {
 
 void drawLoop() {
   // clear moving items
+  
   tft.fillRect(pillarPos+45, gapPos+90, 5, 140-gapPos, BACKGROUND_COLOR);
   tft.fillRect(fx, fy, 34, 24, BACKGROUND_COLOR);
 
@@ -212,34 +213,44 @@ void drawLoop() {
 //   }
 // }
 
-//void boundedText(int x, int y, char* text) {
-//  int max_lines = 3;
-//  char all_text[max_lines][49];
-//  int at_i = 0;
-//  char line[49];
-//  int i = 0;
-//  int l_i = 0;
-//  char c;
-//  while ((c = text[i]) != '\0') {
-//    line[l_i] = c;
-//    ++i;
-//    ++l_i;
-//    if (l_i == 49) {
-//      line[l_i] = '\0';
-//      all_text[at_i] = line;
-//      l_i = 0;
-//      ++at_i;
-//      if (at_i == max_lines) { break; }
-//    }
-//  }
-//}
+void boundedText(int x, int y, char* text) {
+ int max_lines = 3;
+ int max_c = 25;
+ int dim = 15;
+ 
+ char all_text[max_lines][max_c];
+ char line[max_c];
+ int at_i, l_i, i;
+ at_i = l_i = i = 0;
+ char c;
+ while ((c = text[i]) != '\0') {
+   line[l_i] = c;
+   ++i;
+   ++l_i;
+   if (l_i >= max_c-1) {
+     line[l_i] = '\0';
+     for (int k = 0; k < 25; ++k) { all_text[at_i][k] = line[k]; }
+     l_i = 0;
+     ++at_i;
+     if (at_i == max_lines) { break; }
+   }
+ }
+ line[l_i] = '\0';
+ for (int k = 0; k < 25; ++k) { all_text[at_i][k] = line[k]; }
+ ++at_i;
+  
+ for (int j = 0; j < at_i; ++j) {
+   tft.setCursor(x, y + (dim*j));
+   tft.print(all_text[j]);
+ }
+}
 
 void question_time() {
   // Create a spot to ask question... Enter a loop
 
   char question[] = "Some pretty big Question here...probably much ..?";
-  char optionA[] =  "Some CORRECT option A here...";
-  char optionB[] =  "Some INCORRECT option B here...";
+  char optionA[] =  "A) Some CORRECT option A here...";
+  char optionB[] =  "B) Some INCORRECT option B here...";
 
   //   add_question(
   //   "Some pretty big Question here...probably much bigger than this one...?",
@@ -253,17 +264,10 @@ void question_time() {
   tft.fillRect(10, 10, 300, 220, QUESTION_COLOR);
   tft.setTextSize (2);
   tft.setTextColor(BLACK);
-  //   tft.println("%s", curr_Q[0]);
-  tft.setCursor (15, 15);
-  tft.print(question);
-  tft.setCursor(15, 70);
-  //   tft.println("A. %s", curr_Q[1]);
-  tft.print(optionA);
-  tft.setCursor(15, 110);
-  //   tft.println("B. %s", curr_Q[2]);
-  tft.print(optionB);
 
-  // boundedText(15,15,question);
+  boundedText(15, 15, question);
+  boundedText(15, 70, optionA);
+  boundedText(15, 110, optionB);
 
   bool A = false;
   bool B = false;
@@ -287,10 +291,10 @@ void question_time() {
   if (selection == correct_option) {
     correct_answer = true;
 
-    tft.setCursor(25, 160);
-    tft.print("YAY!! That was the CORRECT answer. Good Job");
-    tft.setCursor(25, 200);
-    tft.print("Your game will restart in a little bit");
+    char correct_text[] = "YAY!! That was the CORRECT answer. Good Job";
+    char restart_text[] = "Your game will restart in a little bit";
+    boundedText(25, 160, correct_text);
+    boundedText(25, 200, restart_text);
     delay(2000);
 
     tft.fillRect(0, 0, 320, 230, BACKGROUND_COLOR);
@@ -303,18 +307,26 @@ void question_time() {
   else {
     correct_answer = false;
 
-    tft.setCursor(25, 160);
     tft.setTextColor(RED);
-    tft.print("That answer was INCORRECT!");
+    char incorrect_text[] = "That answer was INCORRECT!";
+    boundedText(10, 160, incorrect_text);
+    tft.setTextColor(BLACK);
     
     // if (correct_option == 'A') { tft.drawCircle(30, 80, 10, GREEN); }
     // else { tft.drawCircle(30, 130, 10, GREEN); }
     
-    tft.setCursor(25, 190);
-    tft.setTextColor(BLACK);
-    tft.print("Some Explanation here...");
+    delay(2000);
+    tft.fillRect(10, 10, 300, 220, QUESTION_COLOR);
     
-    delay(3000);
+    tft.setCursor(40, 10);
+    tft.setTextSize(3);
+    tft.print("EXPLANATION");
+    tft.setTextSize(2);
+    
+    char explanation[] = "Some Explanation here...";
+    boundedText(10, 40, explanation);
+    
+    delay(5000);
     tft.fillScreen(BACKGROUND_COLOR);
   }
 }
