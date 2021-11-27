@@ -39,8 +39,14 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define OPTION_B 7
 
 #define MAX_Q 5
+#define MAX_Q_C 51
+#define MAX_E_C 76
+#define MAX_O_C 21
 int q_i = 0;
-char QUESTION_LIST[MAX_Q][5][100];
+char QUESTION_LIST[MAX_Q][MAX_Q_C];
+char OPTIONS_LIST[MAX_Q][2][MAX_O_C];
+char CORRECT_LIST[MAX_Q];
+char EXPLANATIONS_LIST[MAX_Q][MAX_E_C];
 
 int fx, fy, fallRate, score, frame_counter, pillarPos, gapPos;
 int highScore = 0;
@@ -101,6 +107,7 @@ void loop(void) {
   
   restart = digitalRead(JUMP_BTN);
   if (restart) {
+    startGame();
     running = true;
   }
 }
@@ -213,7 +220,7 @@ void drawLoop() {
 //   }
 // }
 
-void boundedText(int x, int y, char* text) {
+void boundedText(int x, int y, const char* text) {
  int max_lines = 3;
  int max_c = 25;
  int dim = 15;
@@ -245,26 +252,25 @@ void boundedText(int x, int y, char* text) {
  }
 }
 
-int add_question(char q[], char a[], char b[], char c[], char e[]) {
+int add_question(const char q[], const char a[], const char b[], const char c, const char e[]) {
   if (q_i == MAX_Q-1) { return 1; }
   
   char curr;
   int i;
   
-  for (i = 0; (curr = q[i]) != '\0'; ++i) { QUESTION_LIST[q_i][0][i] = curr; }
-  QUESTION_LIST[q_i][0][i] = curr;
+  for (i = 0; (curr = q[i]) != '\0' && i < MAX_Q_C; ++i) { QUESTION_LIST[q_i][i] = curr; }
+  QUESTION_LIST[q_i][i] = curr;
   
-  for (i = 0; (curr = a[i]) != '\0'; ++i) { QUESTION_LIST[q_i][1][i] = curr; }
-  QUESTION_LIST[q_i][1][i] = curr;
+  for (i = 0; (curr = a[i]) != '\0' && i < MAX_O_C; ++i) { OPTIONS_LIST[q_i][0][i] = curr; }
+  OPTIONS_LIST[q_i][0][i] = curr;
   
-  for (i = 0; (curr = b[i]) != '\0'; ++i) { QUESTION_LIST[q_i][2][i] = curr; }
-  QUESTION_LIST[q_i][2][i] = curr;
+  for (i = 0; (curr = b[i]) != '\0' && i < MAX_O_C; ++i) { OPTIONS_LIST[q_i][1][i] = curr; }
+  OPTIONS_LIST[q_i][1][i] = curr;
   
-  for (i = 0; (curr = c[i]) != '\0'; ++i) { QUESTION_LIST[q_i][3][i] = curr; }
-  QUESTION_LIST[q_i][3][i] = curr;
+  CORRECT_LIST[q_i] = c;
   
-  for (i = 0; (curr = e[i]) != '\0'; ++i) { QUESTION_LIST[q_i][4][i] = curr; }
-  QUESTION_LIST[q_i][4][i] = curr;
+  for (i = 0; (curr = e[i]) != '\0' && i < MAX_E_C; ++i) { EXPLANATIONS_LIST[q_i][i] = curr; }
+  EXPLANATIONS_LIST[q_i][i] = curr;
   
   ++q_i;
   return 0;
@@ -277,7 +283,7 @@ void make_questions() {
       "Some pretty big Question here...probably much bigger than this one...?",
       "Some specific option A here...probably much bigger than this one...",
       "Some specific option B here...probably much bigger than this one...",
-      "A", 
+      'A', 
       "Some Explanation here..."
     );
 }
@@ -287,9 +293,19 @@ void question_time() {
   int curr_q = 0; // Make this random between 0 and q_i
   
   //! ERROR HERE
-  char question[] = QUESTION_LIST[curr_q][0];
-  char optionA[] =  QUESTION_LIST[curr_q][1];
-  char optionB[] =  QUESTION_LIST[curr_q][2];
+  char question[MAX_Q_C], optionA[MAX_O_C], optionB[MAX_O_C], correct_option, explanation[MAX_E_C];
+  
+  int z;
+  char ch;
+  for (z = 0; (ch = QUESTION_LIST[curr_q][z]) != '\0' && z < MAX_Q_C-1; ++z) { question[z] = ch; }
+  question[z] = '\0';
+  for (z = 0; (ch = OPTIONS_LIST[curr_q][0][z]) != '\0' && z < MAX_O_C-1; ++z) { optionA[z] = ch; }
+  optionA[z] = '\0';
+  for (z = 0; (ch = OPTIONS_LIST[curr_q][1][z]) != '\0' && z < MAX_O_C-1; ++z) { optionB[z] = ch; }
+  optionB[z] = '\0';
+  correct_option = CORRECT_LIST[curr_q];
+  for (z = 0; (ch = EXPLANATIONS_LIST[curr_q][z]) != '\0' && z < MAX_E_C-1; ++z) { explanation[z] = ch; }
+  explanation[z] = '\0';
 
   tft.fillRect(10, 10, 300, 220, QUESTION_COLOR);
   tft.setTextSize (2);
@@ -302,8 +318,6 @@ void question_time() {
   bool A = false;
   bool B = false;
   char selection = 'Z';
-  // char correct_option = curr_Q[3];
-  char correct_option = (char)QUESTION_LIST[curr_q][3];
 
   // Wait for button response
   while (true) {
@@ -320,11 +334,9 @@ void question_time() {
   // Check answer...
   if (selection == correct_option) {
     correct_answer = true;
-
-    char correct_text[] = "YAY!! That was the CORRECT answer. Good Job";
-    char restart_text[] = "Your game will restart in a little bit";
-    boundedText(25, 160, correct_text);
-    boundedText(25, 200, restart_text);
+    
+    boundedText(25, 160, "YAY! That was the CORRECT answer. Good Job");
+    boundedText(25, 200, "Your game will restart in a little bit");
     delay(2000);
 
     tft.fillRect(0, 0, 320, 230, BACKGROUND_COLOR);
@@ -338,8 +350,7 @@ void question_time() {
     correct_answer = false;
 
     tft.setTextColor(RED);
-    char incorrect_text[] = "That answer was INCORRECT!";
-    boundedText(10, 160, incorrect_text);
+    boundedText(10, 160, "That answer was INCORRECT!");
     tft.setTextColor(BLACK);
     
     // if (correct_option == 'A') { tft.drawCircle(30, 80, 10, GREEN); }
@@ -352,8 +363,7 @@ void question_time() {
     tft.setTextSize(3);
     tft.print("EXPLANATION");
     tft.setTextSize(2);
-    
-    char explanation[] = QUESTION_LIST[curr_q][4];
+
     boundedText(10, 40, explanation);
     
     delay(5000);
