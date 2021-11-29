@@ -30,6 +30,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define BACKGROUND_COLOR    BLUE
 #define PILLAR_COLOR        BLACK
 #define PILLAR_BOUNDARY     BLACK
+#define SMOKE_COLOR         BROWN
 #define GROUND_C1           GREEN
 #define GROUND_C2           YELLOW
 #define QUESTION_COLOR      CYAN
@@ -38,7 +39,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define OPTION_A 4
 #define OPTION_B 7
 
-#define MAX_Q 5
+#define MAX_Q 4
 #define MAX_Q_C 51
 #define MAX_E_C 76
 #define MAX_O_C 21
@@ -57,29 +58,29 @@ long fps = 30000; // 20,000
 bool correct_answer = false;
 
 void setup() {
+  pinMode(JUMP_BTN, INPUT);
+  pinMode(OPTION_A, INPUT);
+  pinMode(OPTION_B, INPUT);
   // tft.reset();
-  
   tft.begin(); 
   tft.setRotation(3); 
 
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setCursor (45, 50);
+  tft.fillScreen(BLACK);
+  tft.setCursor (15, 50);
   tft.setTextSize (3);
   tft.setTextColor(GREEN);
-  tft.println("POLLUTIE BIRD !");
-  tft.setCursor (55, 120);
+  tft.println("POLLUTIE PIDGEON");
+  tft.setCursor (120, 120);
   tft.setTextSize (2);
   tft.setTextColor(RED);
   tft.println("TEAM 4");
 
-  delay(200);
-  tft.fillScreen(BACKGROUND_COLOR);
-
-  pinMode(JUMP_BTN, INPUT);
-  pinMode(OPTION_A, INPUT);
-  pinMode(OPTION_B, INPUT);
-  
+  delay(1000); 
   make_questions();
+  wait_for_press();
+  
+  tft.fillScreen(BACKGROUND_COLOR);
+  
   startGame();
   frame_counter = 0;
 }
@@ -112,6 +113,13 @@ void loop(void) {
   }
 }
 
+void wait_for_press() {
+  bool pressed;
+  do {
+    pressed = digitalRead(JUMP_BTN);
+  }
+  while (!pressed);
+}
 
 void startGame() {
   fx = 5;
@@ -124,16 +132,21 @@ void startGame() {
   
   tft.fillScreen(BLUE);
   tft.fillRect(0, 230, 320, 10, GROUND_C2);
+  tft.fillRect(0, 0, 320, 2, SMOKE_COLOR);
 }
 
 void drawPillar(int x, int gap) {
   int factory_height = 136 - gap;
-  tft.fillRect(x+2, gap+92, 46, factory_height, PILLAR_COLOR);
+  int smoke_lowPoint = gap - 4;
+  tft.fillRect(x+2, gap+92, 5, factory_height, PILLAR_COLOR);
+  
+  tft.fillRect(x+2, 2, 5, smoke_lowPoint, SMOKE_COLOR);
 }
 
 void clearPillar(int x, int gap) {
   int factory_height = 140 - gap;
   tft.fillRect(x+45, gap+90, 5, factory_height, BACKGROUND_COLOR);
+  tft.fillRect(x+45, 2, 5, gap, BACKGROUND_COLOR);
 }
 
 void drawFlappy(int x, int y) {
@@ -141,8 +154,6 @@ void drawFlappy(int x, int y) {
   tft.fillRect(x, y, 30, 20, GREY);
   // // Eye
   tft.fillRect(x+16, y+7, 8, 8, WHITE);
-  // // Beak
-  
 }
 
 void clearFlappy(int x, int y) {
@@ -155,7 +166,7 @@ void checkCollision() {
   
   // Collision with pillar
   if (fx + 34 > pillarPos && fx < pillarPos + 50)
-    if (fy + 24 > gapPos + 90)
+    if (fy < gapPos || fy + 24 > gapPos + 90)
       crashed = true;
   
   if (crashed) {
@@ -165,15 +176,18 @@ void checkCollision() {
     if (!correct_answer) {
       tft.setTextColor(WHITE);
       tft.setTextSize(2);
-      tft.setCursor(75, 75);
+      tft.setCursor(75, 50);
       tft.print("Game Over!");
-      tft.setCursor(75, 125);
+      tft.setCursor(75, 100);
       tft.print("Score:");
-      tft.setCursor(220, 125);
+      tft.setCursor(220, 100);
       tft.print(score);
       
       // stop animation
       running = false;
+      
+      tft.setCursor(30, 150);
+      tft.print("Press Jump to Restart");
       
       // delay to stop any last minute clicks from restarting immediately
       delay(1000);
@@ -183,9 +197,8 @@ void checkCollision() {
 
 void drawLoop() {
   // clear moving items
-  
-  tft.fillRect(pillarPos+45, gapPos+90, 5, 140-gapPos, BACKGROUND_COLOR);
-  tft.fillRect(fx, fy, 34, 24, BACKGROUND_COLOR);
+  clearPillar(pillarPos, gapPos);
+  clearFlappy(fx, fy);  
 
   // move items
   fy += fallRate;
@@ -201,24 +214,9 @@ void drawLoop() {
   }
 
   // draw moving items & animate
-  tft.fillRect(pillarPos+2, gapPos+92, 5, 136-gapPos, PILLAR_COLOR);
+  drawPillar(pillarPos, gapPos);
   drawFlappy(fx, fy);
 }
-
-// void add_question(char* question[], char* opA[], char* opB[], char* correct[]) {
-//   if (next_q == MAX_Q) {} // handle error ?? Or ignore?
-//   else {
-//     char new_q[] = {question, opA, opB, correct};
-//     // QUESTION_MAP* new_q = {
-//     //   {'q', question},
-//     //   {'a', opA},
-//     //   {'b', opB},
-//     //   {'c', correct}
-//     // }
-//     QUESTION_LIST[next_q] = new_q;
-//     extern next_q++;
-//   }
-// }
 
 void boundedText(int x, int y, const char* text) {
  int max_lines = 3;
@@ -280,19 +278,31 @@ void make_questions() {
   // Only enter the number of questions specificed by MAX_Q
   // Enter in order: Question, Option A, Option B, Correct Option, Explanation
     add_question(
-      "Some pretty big Question here...probably much bigger than this one...?",
-      "Some specific option A here...probably much bigger than this one...",
-      "Some specific option B here...probably much bigger than this one...",
+      "Smoke and Pollution causes breathing trouble?",
+      "A) True",
+      "B) False",
       'A', 
-      "Some Explanation here..."
+      "Smoke has harmful content, and breathing it can make us sick"
+    );
+    add_question(
+      "Factories with smoke are bad for nature?",
+      "A) YES",
+      "B) NO",
+      'A',
+      "Smoke makes it harder for animals to breathe, killing them"  
+    );
+    add_question(
+      "Cars or Bicycles? (For short distances)",
+      "A) Cars",
+      "B) Bicycles",
+      'B',
+      "Cars pollute. Bicycles don't, so good for short distances"
     );
 }
 
 void question_time() {
   // Create a spot to ask question... Enter a loop
-  int curr_q = 0; // Make this random between 0 and q_i
-  
-  //! ERROR HERE
+  int curr_q = random(0, q_i-1);
   char question[MAX_Q_C], optionA[MAX_O_C], optionB[MAX_O_C], correct_option, explanation[MAX_E_C];
   
   int z;
@@ -335,8 +345,7 @@ void question_time() {
   if (selection == correct_option) {
     correct_answer = true;
     
-    boundedText(25, 160, "YAY! That was the CORRECT answer. Good Job");
-    boundedText(25, 200, "Your game will restart in a little bit");
+    boundedText(25, 160, "YAY! CORRECT, Good Job");
     delay(2000);
 
     tft.fillRect(0, 0, 320, 230, BACKGROUND_COLOR);
@@ -350,7 +359,7 @@ void question_time() {
     correct_answer = false;
 
     tft.setTextColor(RED);
-    boundedText(10, 160, "That answer was INCORRECT!");
+    boundedText(10, 160, "INCORRECT!");
     tft.setTextColor(BLACK);
     
     // if (correct_option == 'A') { tft.drawCircle(30, 80, 10, GREEN); }
@@ -359,14 +368,17 @@ void question_time() {
     delay(2000);
     tft.fillRect(10, 10, 300, 220, QUESTION_COLOR);
     
-    tft.setCursor(40, 10);
+    tft.setCursor(50, 15);
     tft.setTextSize(3);
     tft.print("EXPLANATION");
     tft.setTextSize(2);
 
-    boundedText(10, 40, explanation);
+    boundedText(15, 50, explanation);
     
     delay(5000);
+    boundedText(15, 180, "Press Jump to proceed");
+    wait_for_press();
+    delay(100);    
     tft.fillScreen(BACKGROUND_COLOR);
   }
 }
