@@ -216,7 +216,17 @@ void drawLoop() {
   // draw moving items & animate
   drawPillar(pillarPos, gapPos);
   drawFlappy(fx, fy);
+  show_score();
 }
+
+void show_score();
+  tft.setCursor(290, 15);
+  tft.setTextSize(1);
+  tft.print("SC: ");
+  tft.setCursor(310, 15);
+  tft.print(highscore);
+
+  tft.setTextSize(2);
 
 void boundedText(int x, int y, const char* text) {
  int max_lines = 3;
