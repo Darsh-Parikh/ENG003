@@ -36,18 +36,8 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define QUESTION_COLOR      CYAN
 
 #define JUMP_BTN 2
-#define OPTION_A 4
+#define OPTION_A 5
 #define OPTION_B 7
-
-#define MAX_Q 4
-#define MAX_Q_C 51
-#define MAX_E_C 76
-#define MAX_O_C 21
-int q_i = 0;
-char QUESTION_LIST[MAX_Q][MAX_Q_C];
-char OPTIONS_LIST[MAX_Q][2][MAX_O_C];
-char CORRECT_LIST[MAX_Q];
-char EXPLANATIONS_LIST[MAX_Q][MAX_E_C];
 
 int fx, fy, fallRate, score, frame_counter, pillarPos, gapPos;
 int highScore = 0;
@@ -76,7 +66,6 @@ void setup() {
   tft.println("TEAM 4");
 
   delay(1000); 
-  make_questions();
   wait_for_press();
   
   tft.fillScreen(BACKGROUND_COLOR);
@@ -219,16 +208,17 @@ void drawLoop() {
   show_score();
 }
 
-void show_score();
+void show_score() {
   tft.setCursor(290, 15);
   tft.setTextSize(1);
   tft.print("SC: ");
   tft.setCursor(310, 15);
-  tft.print(highscore);
+  tft.print(score);
 
-  tft.setTextSize(2);
+  tft.setTextSize(2); 
+}
 
-void boundedText(int x, int y, const char* text) {
+void boundedText(int x, int y, char* text) {
  int max_lines = 3;
  int max_c = 25;
  int dim = 15;
@@ -260,73 +250,42 @@ void boundedText(int x, int y, const char* text) {
  }
 }
 
-int add_question(const char q[], const char a[], const char b[], const char c, const char e[]) {
-  if (q_i == MAX_Q-1) { return 1; }
-  
-  char curr;
-  int i;
-  
-  for (i = 0; (curr = q[i]) != '\0' && i < MAX_Q_C; ++i) { QUESTION_LIST[q_i][i] = curr; }
-  QUESTION_LIST[q_i][i] = curr;
-  
-  for (i = 0; (curr = a[i]) != '\0' && i < MAX_O_C; ++i) { OPTIONS_LIST[q_i][0][i] = curr; }
-  OPTIONS_LIST[q_i][0][i] = curr;
-  
-  for (i = 0; (curr = b[i]) != '\0' && i < MAX_O_C; ++i) { OPTIONS_LIST[q_i][1][i] = curr; }
-  OPTIONS_LIST[q_i][1][i] = curr;
-  
-  CORRECT_LIST[q_i] = c;
-  
-  for (i = 0; (curr = e[i]) != '\0' && i < MAX_E_C; ++i) { EXPLANATIONS_LIST[q_i][i] = curr; }
-  EXPLANATIONS_LIST[q_i][i] = curr;
-  
-  ++q_i;
-  return 0;
-}
-
-void make_questions() {
-  // Only enter the number of questions specificed by MAX_Q
-  // Enter in order: Question, Option A, Option B, Correct Option, Explanation
-    add_question(
-      "Smoke and Pollution causes breathing trouble?",
-      "A) True",
-      "B) False",
-      'A', 
-      "Smoke has harmful content, and breathing it can make us sick"
-    );
-    add_question(
-      "Factories with smoke are bad for nature?",
-      "A) YES",
-      "B) NO",
-      'A',
-      "Smoke makes it harder for animals to breathe, killing them"  
-    );
-    add_question(
-      "Cars or Bicycles? (For short distances)",
-      "A) Cars",
-      "B) Bicycles",
-      'B',
-      "Cars pollute. Bicycles don't, so good for short distances"
-    );
-}
-
 void question_time() {
   // Create a spot to ask question... Enter a loop
-  int curr_q = random(0, q_i-1);
-  char question[MAX_Q_C], optionA[MAX_O_C], optionB[MAX_O_C], correct_option, explanation[MAX_E_C];
+  char* question;
+  char* optionA;
+  char* optionB;
+  char* explanation;
+  char correct_option;
   
-  int z;
-  char ch;
-  for (z = 0; (ch = QUESTION_LIST[curr_q][z]) != '\0' && z < MAX_Q_C-1; ++z) { question[z] = ch; }
-  question[z] = '\0';
-  for (z = 0; (ch = OPTIONS_LIST[curr_q][0][z]) != '\0' && z < MAX_O_C-1; ++z) { optionA[z] = ch; }
-  optionA[z] = '\0';
-  for (z = 0; (ch = OPTIONS_LIST[curr_q][1][z]) != '\0' && z < MAX_O_C-1; ++z) { optionB[z] = ch; }
-  optionB[z] = '\0';
-  correct_option = CORRECT_LIST[curr_q];
-  for (z = 0; (ch = EXPLANATIONS_LIST[curr_q][z]) != '\0' && z < MAX_E_C-1; ++z) { explanation[z] = ch; }
-  explanation[z] = '\0';
-
+  // implement with a switch statement instead. Had problems the last time it was attempted
+  int curr_q = random(1, 4);
+  if (curr_q == 1) {
+    question = "Smoke and Pollution causes breathing trouble?";
+    optionA = "A) True";
+    optionB = "B) False";
+    correct_option = 'A';
+    explanation = "Smoke has harmful content, and breathing it can make us sick";
+  } else if (curr_q == 2) {
+    question = "Cars or Bicycles? (For short distances)";
+    optionA = "A) Cars";
+    optionB = "B) Bicycles";
+    correct_option = 'B';
+    explanation = "Cars pollute. Bicycles don't, so good for short distances";
+  } else if (curr_q == 3) {
+    question = "Factories with smoke are bad for nature?";
+    optionA = "A) YES";
+    optionB = "B) NO";
+    correct_option = 'A';
+    explanation = "Smoke makes it harder for animals to breathe, killing them";
+  } else if (curr_q == 4) {
+    question = "How much greenhouse gas do factories produce?";
+    optionA = "A) 20% (A lot)";
+    optionB = "B) 3% (Little bit)";
+    correct_option = 'A';
+    explanation = "Many factories release tons of carbon dioxide and smoke when working. They are responsible for a lot of emmisions.";
+  }
+  
   tft.fillRect(10, 10, 300, 220, QUESTION_COLOR);
   tft.setTextSize (2);
   tft.setTextColor(BLACK);
